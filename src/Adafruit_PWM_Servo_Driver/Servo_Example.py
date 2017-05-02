@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+import sys
 from Adafruit_PWM_Servo_Driver import PWM
 import time
 
@@ -26,12 +26,20 @@ def setServoPulse(channel, pulse):
   pwm.setPWM(channel, 0, pulse)
 
 pwm.setPWMFreq(60)                        # Set frequency to 60 Hz
-while (True):
+#while (True):
   # Change speed of continuous servo on channel O
-  pwm.setPWM(0, 0, servoMin)
-  time.sleep(1)
-  pwm.setPWM(0, 0, servoMax)
-  time.sleep(1)
+
+print(sys.argv[1])
+val = int(sys.argv[1])
+channel = int(sys.argv[2])
+fraction = int(servoMin + (val/100.0)*(servoMax - servoMin))
+print("setting servo to %i" % fraction)
+pwm.setPWM(channel,0,fraction)
+  
+#  pwm.setPWM(0, 0, servoMin)
+#  time.sleep(1)
+#  pwm.setPWM(0, 0, servoMax)
+#  time.sleep(1)
 
 
 
