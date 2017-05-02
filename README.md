@@ -1,2 +1,2 @@
 # Arthur
-Sainsmart robotic arm
+Sainsmart robotic arm Manipulator program. Run main.py
