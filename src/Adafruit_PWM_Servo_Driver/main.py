@@ -17,16 +17,15 @@ def main():
 		print('3. Programmed movements')
 		print('To quit put in any non-integer.')
 		choice = raw_input('>> ')
-		print
 		# checks for valid integer input
 		try:
 			choice = int(choice)
 		except ValueError:
 			print('Thank you, Goodbye.')
-			pass
+			exit()
 		servo.Action(int(choice)) # do operation
 		
-	#channel = raw_input('channel # (1-4): ')
+	#channel = raw_input('channel # (1-5): ')
 	#value = raw_input('percentage # (1-100): ')
 	#print('{} {}'.format(channel,value))
 
