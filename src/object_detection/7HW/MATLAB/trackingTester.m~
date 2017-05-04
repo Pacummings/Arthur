@@ -1,0 +1,77 @@
+function trackingTester(data_params, tracking_params)
+    frame_name = data_params.genFname(1);
+    first_frame = imread([data_params.data_dir  '/'  frame_name]);
+    rec_hw = round(tracking_params.rect(3) / 2); % Rect half win
+    rec_hh = round(tracking_params.rect(4) / 2); % Rect half height
+    rec_w = tracking_params.rect(3);
+    rec_h = tracking_params.rect(4);
+    cx = tracking_params.rect(1) + rec_hw;   % Center's x coord
+    cy = tracking_params.rect(2) + rec_hh;   % Center's y coord
+    ss = tracking_params.search_half_window_size;
+    
+    frame_in_rect = first_frame((cy-rec_hh):(cy+rec_h-rec_hh-1), (cx-rec_hw):(cx-rec_hw+rec_w-1), :);
+    [~,track_map] = rgb2ind(first_frame, .6);
+    frame_size = size(frame_in_rect);
+    frame_size = frame_size(1:2);
+    indexed_sample = im2col(rgb2ind(frame_in_rect, track_map), frame_size);
+    %imshow(rgb2ind(first_frame,track_map,'nodither'), track_map)
+    bin_n = size(track_map,1);    
+    
+    % First attempt at histogram
+%     cata_sample = categorical(indexed_sample, 1:bin_n);
+%     track_hist = countcats(cata_sample(:));
+    
+    % Custom histogram
+    hist_weight = im2col(fspecial('gauss', frame_size, max(frame_size(:))), frame_size);
+    track_hist = weighted_hist(indexed_sample, hist_weight, bin_n);
+    
+    % Normalize
+    %track_hist = track_hist ./ sum(track_hist, 1);
+
+    % Write the first image, just to have something to compare to
+    imwrite(drawBox(first_frame, [cx-rec_w/2, cy-rec_h/2, rec_w, rec_h], [255,255,255], 3), ...
+           [data_params.out_dir  '/'  'frame1.png']);
+    
+    for i=data_params.frame_ids(2:end)
+        frame_name = data_params.genFname(i);
+        ith_frame = imread([data_params.data_dir  '/'  frame_name]);
+
+        search_rangey = uint8(max((cy-ss),1):min((cy+ss),size(ith_frame,1)));
+        search_rangex = uint8(max((cx-ss),1):min((cx+ss),size(ith_frame,2)));
+        search_space = ith_frame(  search_rangey, search_rangex, :);
+        indexed_search_space = rgb2ind(search_space, track_map);
+        candidate_columns = im2col(indexed_search_space, [rec_hh*2, rec_hw*2]);
+        
+        % My first attempt at created a histogram, unweighted
+%         cata_candidate_columns = categorical(candidate_columns, 1:bin_n);
+%         candidate_hists = countcats(cata_candidate_columns, 1);    
+        
+        % Created a custom histogram to get it centered
+        candidate_hists = weighted_hist(candidate_columns, hist_weight, bin_n);
+
+        
+        % First thing I tried was using the mean square of errors... no
+        % luck, poor metric of correlation
+%         candidate_errors = candidate_hists - repmat(track_hist, [1 size(candidate_hists,2)]);
+%         square_sum_errors = sum(abs(candidate_errors), 1);
+%         [~, minindx] = min(square_sum_errors);
+        
+        % Using the correlation function given in class works much better
+        hist_correlations = compute_correlation(track_hist, candidate_hists);
+        [~, maxindx] = max(hist_correlations);
+        
+        [tly, tlx] = ind2sub(size(indexed_search_space) - [rec_h+1, rec_w+1], maxindx); 
+        
+        %absolute topleft
+        atlx = tlx + max((cx-ss),0);
+        atly = tly + max((cy-ss),0);
+        
+        center = [atlx atly] + [rec_hw rec_hh];
+        cx = center(1);
+        cy = center(2);
+        
+        result = drawBox(ith_frame, [atlx, atly, rec_hw*2, rec_hh*2], [255,255,255], 3);
+        
+        imwrite(result, [data_params.out_dir  '/'  frame_name]);
+    end
+end

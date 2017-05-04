@@ -1,0 +1,16 @@
+function [bins] = weighted_hist(X, W)
+    % Where W is a column vector the same height as X
+    bin_n = max(X(:));
+    bins = zeros(bin_n, size(X, 2));
+    X = X + 1;
+    for r=1:size(X,1)
+        for c=1:size(X,2)
+            bins(X(r,c), c) = bins(X(r,c),c) + W(r);
+        end
+    end
+    
+    % Normalize
+    denoms = sum(bins, 1);
+    spread_denoms = repmat(denoms.^-1, [ bin_n, 1]);
+    bins = bins .* spread_denoms;
+end
